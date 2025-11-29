@@ -114,25 +114,25 @@ const StudyMaterials = () => {
       const totalRows = homework.rows.length;
       const tableHeight = rowHeight * (totalRows + 1); // + header row
       const height = startY + tableHeight + 180;
-
+  
       const dateObj = homework.date ? new Date(homework.date) : new Date();
       const dayName = getDayName(dateObj.toISOString());
       const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')} - ${String(dateObj.getMonth()+1).padStart(2, '0')} - ${dateObj.getFullYear()}`;
-
+  
       const header = `Boost Educational System`;
       const schoolTitle = schoolName || header;
-
+  
       let svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
         `<defs>` +
         `<style><![CDATA[
-          .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #fff; }
-          .sub { font-family: Arial, sans-serif; font-size: 18px; fill: #fff; }
-          .th { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
-          .td { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
-          .td-sub { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
-          .note { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
-        ]]></style>` +
+            .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #fff; }
+            .sub { font-family: Arial, sans-serif; font-size: 18px; fill: #fff; }
+            .th { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
+            .td { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
+            .td-sub { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
+            .note { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
+          ]]></style>` +
         `</defs>` +
         // Top header bar
         `<rect x="0" y="0" width="${width}" height="60" fill="#0077b6"/>` +
@@ -141,14 +141,14 @@ const StudyMaterials = () => {
         `<rect x="0" y="60" width="${width}" height="40" fill="#48cae4"/>` +
         `<text class="sub" x="30" y="85" dominant-baseline="middle">Level - ${homework.level || ''}</text>` +
         `<text class="sub" x="${width - 30}" y="85" dominant-baseline="middle" text-anchor="end">${dayName}  ${formattedDate}</text>`;
-
+  
       // Table header
       const tableX = 40;
       const tableY = startY;
       svg += `<rect x="${tableX}" y="${tableY}" width="${tableWidth}" height="${rowHeight}" fill="#eaf4ff" stroke="#90e0ef"/>`;
       svg += `<text class="th" x="${tableX + 12}" y="${tableY + 30}" dominant-baseline="middle">Subject</text>`;
       svg += `<text class="th" x="${tableX + col1Width + 12}" y="${tableY + 30}" dominant-baseline="middle">Homework Details</text>`;
-
+  
       // Table rows
       for (let i = 0; i < totalRows; i++) {
         const y = tableY + rowHeight * (i + 1);
@@ -159,22 +159,57 @@ const StudyMaterials = () => {
         svg += `<text class="td td-sub" x="${tableX + 12}" y="${y + 30}" dominant-baseline="middle">${subj}</text>`;
         svg += `<text class="td" x="${tableX + col1Width + 12}" y="${y + 30}" dominant-baseline="middle">${det}</text>`;
       }
-
+  
       // Note section
       const noteY = tableY + rowHeight * (totalRows + 1) + 40;
       if (homework.note) {
         svg += `<text class="note" x="${tableX}" y="${noteY}" dominant-baseline="middle">Note: ${homework.note.replace(/&/g, '&amp;')}</text>`;
       }
-
+  
       svg += `</svg>`;
-
-      const blob = new Blob([svg], { type: 'image/svg+xml' });
-      const fileName = `homework-${formattedDate}.svg`;
-      const file = new File([blob], fileName, { type: 'image/svg+xml' });
-      setFormData(fd => ({ ...fd, file }));
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      alert('Homework image generated. You can now submit to upload.');
+  
+      // Convert SVG to PNG using Canvas
+      const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+  
+        const finalize = (pngBlob) => {
+          const fileName = `homework-${formattedDate}.png`;
+          const file = new File([pngBlob], fileName, { type: 'image/png' });
+          setFormData(fd => ({ ...fd, file }));
+          const url = URL.createObjectURL(pngBlob);
+          setPreviewUrl(url);
+          alert('Homework image (PNG) generated. You can now submit to upload.');
+        };
+  
+        if (canvas.toBlob) {
+          canvas.toBlob((pngBlob) => {
+            if (pngBlob) {
+              finalize(pngBlob);
+            } else {
+              alert('Failed to generate PNG blob');
+            }
+          }, 'image/png');
+        } else {
+          // Fallback for environments without toBlob
+          const dataUrl = canvas.toDataURL('image/png');
+          fetch(dataUrl)
+            .then(res => res.blob())
+            .then(finalize)
+            .catch(() => alert('Failed to generate PNG'));
+        }
+      };
+      img.onerror = () => {
+        console.error('Failed to render SVG to image');
+        alert('Failed to generate homework image');
+      };
+      img.src = svgDataUrl;
     } catch (error) {
       console.error('Failed to generate homework SVG:', error);
       alert('Failed to generate homework image');
@@ -298,7 +333,7 @@ const StudyMaterials = () => {
 
       <Row>
         {materials.map(material => (
-          <Col md={6} key={material.id} className="mb-3">
+          <Col md={material.materialType === 'homework' ? 12 : 6} key={material.id} className="mb-3">
             <Card>
               <Card.Header className={`bg-${getTypeColor(material.materialType)} text-white`}>
                 <div className="d-flex justify-content-between align-items-center">
@@ -332,9 +367,15 @@ const StudyMaterials = () => {
                       />
                     </div>
                     <div className="mt-2">
-                      <a href={material.fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-primary">
+                      <a
+                        href={(material.fileUrl && material.fileUrl.includes('/upload/')) ? material.fileUrl.replace('/upload/', '/upload/f_png,fl_attachment/') : material.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        download={(material.fileName ? material.fileName.replace(/\.svg$/i, '.png') : 'homework.png')}
+                        className="btn btn-sm btn-outline-primary"
+                      >
                         <i className="fas fa-download me-1"></i>
-                        Download Image
+                        Download PNG
                       </a>
                     </div>
                   </div>
