@@ -106,7 +106,8 @@ const StudyMaterials = () => {
     try {
       initializeRowsFromSubjects();
       const width = 1100;
-      const startY = 80;
+      const infoHeight = 280; // extra space for larger (bold) info lines
+      const startY = infoHeight + 200; // table starts after header + subheader
       const rowHeight = 48;
       const tableWidth = width - 80;
       const col1Width = 300;
@@ -117,10 +118,12 @@ const StudyMaterials = () => {
   
       const dateObj = homework.date ? new Date(homework.date) : new Date();
       const dayName = getDayName(dateObj.toISOString());
+      const usDateStr = dateObj.toLocaleDateString('en-US');
       const formattedDate = `${String(dateObj.getDate()).padStart(2, '0')} - ${String(dateObj.getMonth()+1).padStart(2, '0')} - ${dateObj.getFullYear()}`;
   
       const header = `Boost Educational System`;
       const schoolTitle = schoolName || header;
+      const subjectName = (subjects.find(s => s.id === formData.subjectId)?.name) || '';
   
       let svg = `<?xml version="1.0" encoding="UTF-8"?>\n` +
         `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">` +
@@ -128,19 +131,26 @@ const StudyMaterials = () => {
         `<style><![CDATA[
             .title { font-family: Arial, sans-serif; font-size: 28px; font-weight: bold; fill: #fff; }
             .sub { font-family: Arial, sans-serif; font-size: 18px; fill: #fff; }
+            .info { font-family: Arial, sans-serif; font-size: 20px; fill: #222; }
+            .info-strong { font-family: Arial, sans-serif; font-size: 28px; font-weight: 700; fill: #000; }
             .th { font-family: Arial, sans-serif; font-size: 18px; font-weight: bold; fill: #333; }
             .td { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
             .td-sub { font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; fill: #333; }
             .note { font-family: Arial, sans-serif; font-size: 16px; fill: #333; }
           ]]></style>` +
         `</defs>` +
-        // Top header bar
-        `<rect x="0" y="0" width="${width}" height="60" fill="#0077b6"/>` +
-        `<text class="title" x="${width/2}" y="38" dominant-baseline="middle" text-anchor="middle">${schoolTitle}</text>` +
+        // Top info block (specific lines bigger & bold)
+        `<text class="info-strong" x="30" y="36">Class Level: ${homework.level || ''}</text>` +
+        `<text class="info" x="30" y="72">Subject: ${subjectName} | Uploaded: </text>` +
+        `<text class="info-strong" x="30" y="108">Date: ${usDateStr}</text>` +
+        `<text class="info-strong" x="30" y="144">Day: ${dayName}</text>` +
+        // Header bar
+        `<rect x="0" y="${infoHeight}" width="${width}" height="60" fill="#0077b6"/>` +
+        `<text class="title" x="${width/2}" y="${infoHeight + 38}" dominant-baseline="middle" text-anchor="middle">${schoolTitle}</text>` +
         // Subheader with level + date
-        `<rect x="0" y="60" width="${width}" height="40" fill="#48cae4"/>` +
-        `<text class="sub" x="30" y="85" dominant-baseline="middle">Level - ${homework.level || ''}</text>` +
-        `<text class="sub" x="${width - 30}" y="85" dominant-baseline="middle" text-anchor="end">${dayName}  ${formattedDate}</text>`;
+        `<rect x="0" y="${infoHeight + 60}" width="${width}" height="40" fill="#48cae4"/>` +
+        `<text class="sub" x="30" y="${infoHeight + 85}" dominant-baseline="middle">Level - ${homework.level || ''}</text>` +
+        `<text class="sub" x="${width - 30}" y="${infoHeight + 85}" dominant-baseline="middle" text-anchor="end">${dayName}  ${formattedDate}</text>`;
   
       // Table header
       const tableX = 40;
@@ -345,15 +355,15 @@ const StudyMaterials = () => {
                 <p className="card-text">{material.description}</p>
                 <div className="mb-2">
                   {material.materialType === 'homework' && (
-                    <div className="fw-bold">Class Level: {material.homeworkLevel || 'N/A'}</div>
+                    <div className="fw-bold" style={{ fontSize: '1.2rem' }}>Class Level: {material.homeworkLevel || 'N/A'}</div>
                   )}
-                  <small className="text-muted">
+                  <div className="fw-bold" style={{ fontSize: '1.2rem' }}>
                     Subject: {material.subjectName} | Uploaded: {formatDate(material.createdAt)}
-                  </small>
+                  </div>
                   {material.materialType === 'homework' && (
                     <>
-                      <div className="mt-1"><strong>Date: {formatHomeworkDate(material.homeworkDate)}</strong></div>
-                      <div className="mt-1"><strong>Day: {material.homeworkDay || getDayName(material.homeworkDate)}</strong></div>
+                      <div className="mt-1 fw-bold" style={{ fontSize: '1.2rem' }}>Date: {formatHomeworkDate(material.homeworkDate)}</div>
+                      <div className="mt-1 fw-bold" style={{ fontSize: '1.2rem' }}>Day: {material.homeworkDay || getDayName(material.homeworkDate)}</div>
                     </>
                   )}
                 </div>
