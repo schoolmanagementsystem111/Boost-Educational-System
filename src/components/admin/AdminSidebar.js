@@ -56,7 +56,7 @@ const AdminSidebar = ({ onClose, handleLogout }) => {
   };
 
   return (
-    <div className="sidebar-enhanced" style={{ width: '280px', minHeight: '100vh', position: 'relative' }}>
+    <div className="sidebar-enhanced" style={{ minHeight: '100vh' }}>
       <button className="sidebar-close-btn" onClick={handleCloseSidebar}>
         <i className="fas fa-times"></i>
       </button>
